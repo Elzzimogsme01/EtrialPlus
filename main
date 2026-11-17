@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#000000">
+<title>E's AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* To match the wordmark font of E's game, change --brand below (and the Google Fonts link above). */
+:root{--bg:#000;--panel:#080808;--panel2:#101010;--fg:#fff;--dim:rgba(255,255,255,.58);--faint:rgba(255,255,255,.34);--line:rgba(255,255,255,.13);--line2:rgba(255,255,255,.26);--brand:'Space Grotesk','DM Sans',sans-serif;--ease:cubic-bezier(.2,.8,.2,1)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:'DM Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{overflow:hidden}
+button,textarea,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid #fff;outline-offset:2px}
+::selection{background:#fff;color:#000}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#ffffff22;border-radius:8px}::-webkit-scrollbar-thumb:hover{background:#ffffff44}
+#stars{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.vignette{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 50% 40%,transparent 30%,#000 100%)}
+
+/* splash */
+#splash{position:fixed;inset:0;z-index:50;background:#000;display:grid;place-items:center;transition:opacity .7s ease .15s,transform .9s var(--ease);}
+#splash.done{opacity:0;transform:scale(2.4);pointer-events:none}
+.splash-in{text-align:center}
+.splash-word{font-family:var(--brand);font-weight:700;font-size:clamp(46px,9vw,92px);letter-spacing:-2px;display:flex;justify-content:center}
+.splash-word span{display:inline-block;opacity:0;transform:scale(2.6);filter:blur(14px);animation:letter .8s var(--ease) forwards}
+.splash-word span:nth-child(1){animation-delay:.05s}.splash-word span:nth-child(2){animation-delay:.12s}.splash-word span:nth-child(3){animation-delay:.19s}.splash-word span:nth-child(4){animation-delay:.3s}.splash-word span:nth-child(5){animation-delay:.37s}.splash-word span:nth-child(6){animation-delay:.44s}
+.splash-word .sp{width:.28em}
+@keyframes letter{to{opacity:1;transform:scale(1);filter:blur(0)}}
+.splash-bar{width:150px;height:2px;background:#ffffff22;margin:26px auto 0;overflow:hidden;border-radius:2px}
+.splash-bar i{display:block;height:100%;width:40%;background:#fff;animation:slide 1s ease-in-out infinite}
+@keyframes slide{from{transform:translateX(-110%)}to{transform:translateX(280%)}}
+.splash-msg{margin-top:14px;font-size:12px;color:var(--faint)}
+
+/* layout */
+.app{position:relative;z-index:1;display:flex;height:100%;opacity:0;transform:scale(.94);filter:blur(6px)}
+.app.in{animation:zoomIn 1.1s var(--ease) forwards}
+@keyframes zoomIn{to{opacity:1;transform:scale(1);filter:blur(0)}}
+.sidebar{width:268px;flex-shrink:0;background:rgba(0,0,0,.72);backdrop-filter:blur(24px);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:22px 14px;transition:transform .35s var(--ease)}
+.brand{font-family:var(--brand);font-weight:700;font-size:26px;letter-spacing:-1px;padding:2px 10px 24px}
+.new-chat{width:100%;border:1px solid var(--line2);background:transparent;padding:12px 14px;border-radius:12px;text-align:left;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500;transition:.25s var(--ease)}
+.new-chat:hover{background:#fff;color:#000;transform:scale(1.02)}
+.side-label{font-size:11px;color:var(--faint);font-weight:600;padding:26px 10px 8px}
+.history{overflow:auto;flex:1;margin:0 -4px;padding:0 4px}
+.hi{display:flex;align-items:center;border-radius:9px;margin:2px 0;transition:.2s}
+.hi:hover,.hi.active{background:#ffffff12}
+.hi button.t{flex:1;min-width:0;border:0;background:transparent;text-align:left;padding:10px;font-size:12.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hi.active button.t,.hi:hover button.t{color:#fff}
+.hi button.x{border:0;background:transparent;color:var(--faint);padding:6px 9px;opacity:0;transition:.2s;font-size:13px}
+.hi:hover button.x{opacity:1}.hi button.x:hover{color:#fff}
+.empty-hist{font-size:12px;color:var(--faint);padding:8px 10px}
+.side-bottom{border-top:1px solid var(--line);padding-top:12px}
+.side-btn{width:100%;display:flex;align-items:center;gap:10px;border:0;background:transparent;padding:10px;border-radius:10px;font-size:13px;color:var(--dim);transition:.2s}
+.side-btn:hover{background:#ffffff12;color:#fff}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+.topbar{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid var(--line);background:rgba(0,0,0,.35);backdrop-filter:blur(14px)}
+.top-left{display:flex;align-items:center;gap:12px}
+.icon-btn{border:0;background:transparent;border-radius:9px;padding:8px 10px;color:var(--dim);transition:.2s}.icon-btn:hover{background:#ffffff14;color:#fff}
+.mobile-menu{display:none}
+.conn{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--dim);border:1px solid var(--line);border-radius:30px;padding:7px 13px}
+.dot{width:7px;height:7px;border-radius:50%;background:#555}
+.dot.on{background:#fff;box-shadow:0 0 12px #fff}
+.dot.busy{background:#fff;animation:pulse 1s infinite}
+.dot.off{background:#444}
+@keyframes pulse{50%{opacity:.25;transform:scale(.7)}}
+.settings-btn{border:1px solid var(--line);background:transparent;border-radius:10px;padding:8px 14px;font-size:12px;transition:.2s}.settings-btn:hover{background:#fff;color:#000}
+.top-actions{display:flex;gap:10px;align-items:center}
+
+.chat-scroll{flex:1;overflow:auto;scroll-behavior:smooth;padding:30px 24px 10px}
+.chat-inner{max-width:780px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+.welcome{margin:auto;text-align:center;width:100%;padding:30px 0}
+.welcome h1{font-family:var(--brand);font-weight:700;font-size:clamp(56px,10vw,112px);letter-spacing:-4px;line-height:.95;margin:0 0 18px;animation:hero 1.3s var(--ease) both}
+@keyframes hero{from{opacity:0;transform:scale(1.5);filter:blur(16px);letter-spacing:12px}to{opacity:1;transform:scale(1);filter:blur(0);letter-spacing:-4px}}
+.welcome p{color:var(--dim);font-size:15px;margin:0 0 34px;animation:fade 1s ease .5s both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.prompt-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:620px;margin:0 auto}
+.prompt{border:1px solid var(--line);border-radius:14px;background:rgba(10,10,10,.7);padding:16px;text-align:left;transition:transform .3s var(--ease),background .25s,color .25s,border-color .25s;min-height:78px;animation:pop .7s var(--ease) both}
+.prompt:nth-child(1){animation-delay:.6s}.prompt:nth-child(2){animation-delay:.68s}.prompt:nth-child(3){animation-delay:.76s}.prompt:nth-child(4){animation-delay:.84s}
+@keyframes pop{from{opacity:0;transform:scale(.88) translateY(14px)}to{opacity:1;transform:none}}
+.prompt:hover{transform:scale(1.045);background:#fff;color:#000;border-color:#fff}
+.prompt b{font-size:13.5px;display:block;margin-bottom:5px;font-weight:600}.prompt small{font-size:12px;color:var(--faint);line-height:1.4}.prompt:hover small{color:#000a}
+
+.messages{width:100%;padding:6px 0 24px}
+.message{margin:26px 0;animation:msgIn .45s var(--ease) both;transform-origin:left top}
+.message.user{transform-origin:right top;display:flex;flex-direction:column;align-items:flex-end}
+@keyframes msgIn{from{opacity:0;transform:scale(.93) translateY(10px)}to{opacity:1;transform:none}}
+.msg-name{font-size:12px;color:var(--faint);margin:0 2px 8px;display:flex;align-items:center;gap:10px}
+.message.assistant .msg-name b{font-family:var(--brand);color:#fff;font-weight:600;font-size:13px}
+.msg-copy{border:1px solid var(--line);background:transparent;color:var(--dim);font-size:11px;border-radius:7px;padding:2px 8px;opacity:0;transition:.2s}
+.message:hover .msg-copy{opacity:1}.msg-copy:hover{background:#fff;color:#000}
+.bubble{font-size:14.5px;line-height:1.75;overflow-wrap:anywhere;max-width:100%}
+.message.user .bubble{background:#fff;color:#000;border-radius:18px 4px 18px 18px;padding:12px 17px;white-space:pre-wrap;max-width:min(640px,100%);font-weight:500}
+.bubble h3,.bubble h4{font-family:var(--brand);margin:18px 0 6px;letter-spacing:-.3px}.bubble h3{font-size:19px}.bubble h4{font-size:16px}
+.bubble ul,.bubble ol{margin:8px 0;padding-left:22px}.bubble li{margin:3px 0}
+.bubble code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;background:#ffffff16;border-radius:5px;padding:2px 6px}
+.code{margin:12px 0;border:1px solid var(--line2);border-radius:12px;background:#050505;overflow:hidden}
+.code-head{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-bottom:1px solid var(--line);font-size:11px;color:var(--faint)}
+.code-head button{border:1px solid var(--line);background:transparent;border-radius:6px;font-size:11px;padding:3px 9px;color:var(--dim)}.code-head button:hover{background:#fff;color:#000}
+.code pre{margin:0;padding:13px 14px;overflow:auto;max-height:420px}.code pre code{background:none;padding:0;font-size:12.5px;line-height:1.6;white-space:pre}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-bottom:8px}
+.thumbs img{height:84px;max-width:140px;object-fit:cover;border-radius:10px;border:1px solid var(--line2);animation:pop .4s var(--ease)}
+.img-tag{font-size:11px;color:var(--faint);margin-bottom:6px}
+.cursor::after{content:'';display:inline-block;width:8px;height:16px;background:#fff;margin-left:3px;vertical-align:-2px;animation:blinkc .9s steps(2) infinite}
+@keyframes blinkc{50%{opacity:0}}
+
+/* thinking loader */
+.think{display:flex;align-items:center;gap:14px;padding:6px 0}
+.wave{display:flex;gap:4px;align-items:center;height:22px}
+.wave i{width:3px;height:100%;background:#fff;border-radius:3px;animation:wave 1.1s ease-in-out infinite;transform-origin:center}
+.wave i:nth-child(2){animation-delay:.12s}.wave i:nth-child(3){animation-delay:.24s}.wave i:nth-child(4){animation-delay:.36s}.wave i:nth-child(5){animation-delay:.48s}
+@keyframes wave{0%,100%{transform:scaleY(.2);opacity:.4}50%{transform:scaleY(1);opacity:1}}
+.shimmer{background:linear-gradient(100deg,#ffffff55 30%,#fff 50%,#ffffff55 70%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shim 1.6s linear infinite;font-size:13px}
+@keyframes shim{from{background-position:120% 0}to{background-position:-120% 0}}
+.skel{margin-top:10px;display:grid;gap:9px;max-width:520px}
+.skel i{display:block;height:11px;border-radius:6px;background:linear-gradient(100deg,#ffffff10 30%,#ffffff28 50%,#ffffff10 70%);background-size:220% 100%;animation:shim 1.4s linear infinite}
+.skel i:nth-child(1){width:92%}.skel i:nth-child(2){width:74%}.skel i:nth-child(3){width:55%}
+
+/* composer */
+.composer-wrap{padding:10px 24px 18px;background:linear-gradient(transparent,rgba(0,0,0,.9) 22%)}
+.composer-row{max-width:980px;margin:0 auto;display:flex;gap:12px;align-items:flex-end}
+.composer{flex:1;min-width:0;border:1px solid var(--line2);border-radius:18px;background:rgba(8,8,8,.94);box-shadow:0 18px 60px #000;transition:.3s var(--ease)}
+.composer:focus-within{border-color:#fff;box-shadow:0 0 0 4px #ffffff10,0 18px 60px #000;transform:scale(1.008)}
+.composer.drag{border-color:#fff;background:#151515}
+.chips{display:flex;gap:8px;flex-wrap:wrap;padding:10px 12px 0}
+.chip{position:relative;animation:pop .35s var(--ease)}
+.chip img{height:58px;width:58px;object-fit:cover;border-radius:10px;border:1px solid var(--line2);display:block}
+.chip button{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:0;background:#fff;color:#000;font-size:11px;line-height:20px;padding:0;transition:.2s}.chip button:hover{transform:scale(1.2)}
+.composer-main{display:flex;align-items:flex-end;gap:8px;padding:9px 10px 9px 8px}
+#promptInput{flex:1;resize:none;border:0;outline:0;background:transparent;font-size:14.5px;line-height:1.6;min-height:28px;max-height:170px;padding:5px 0}
+#promptInput::placeholder{color:var(--faint)}
+.round{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:transparent;display:grid;place-items:center;transition:.25s var(--ease);flex-shrink:0}
+.round:hover{background:#ffffff18;transform:scale(1.08)}
+.send-btn{background:#fff;color:#000;border:0}.send-btn:hover{background:#fff;transform:scale(1.12)}.send-btn:disabled{opacity:.3;cursor:not-allowed;transform:none}
+.round svg{width:18px;height:18px}
+.meter{width:176px;flex-shrink:0;border:1px solid var(--line);border-radius:16px;background:rgba(8,8,8,.85);padding:12px 14px;font-size:12px;animation:fade .8s ease 1s both}
+.m-title{color:var(--faint);font-size:11px}
+.m-prov{font-family:var(--brand);font-weight:600;font-size:15px;margin:2px 0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-row{display:flex;justify-content:space-between;color:var(--dim);gap:8px}.m-row b{color:#fff;font-weight:600}
+.bar{height:3px;background:#ffffff1c;border-radius:3px;margin:6px 0 10px;overflow:hidden}.bar i{display:block;height:100%;background:#fff;width:100%;transition:width .6s var(--ease)}
+.m-sub{color:var(--faint);font-size:11px;line-height:1.4;margin-top:6px}
+.composer-note{text-align:center;color:var(--faint);font-size:11px;margin:10px auto 0;max-width:980px}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:#000b;backdrop-filter:blur(10px);z-index:20;display:none;align-items:center;justify-content:center;padding:18px}
+.overlay.open{display:flex}
+.modal{width:min(560px,100%);max-height:92vh;overflow:auto;background:#0a0a0a;border:1px solid var(--line2);border-radius:20px;padding:24px;animation:modalIn .4s var(--ease)}
+@keyframes modalIn{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:none}}
+.modal-head{display:flex;justify-content:space-between;align-items:center}.modal h2{font-family:var(--brand);font-size:22px;margin:0;letter-spacing:-.5px}
+.modal h3{font-size:13px;margin:24px 0 4px}
+.modal p{font-size:12.5px;color:var(--dim);line-height:1.6;margin:6px 0 12px}
+.field{width:100%;background:#000;border:1px solid var(--line2);border-radius:10px;padding:10px 12px;font-size:13px;outline:0;transition:.2s}.field:focus{border-color:#fff}
+.krow{margin:12px 0}.krow label{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px}.krow label small{color:var(--faint)}
+.krow .two{display:grid;grid-template-columns:1.4fr 1fr;gap:8px}
+.toggle{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;border:1px solid var(--line);border-radius:12px;margin:10px 0;cursor:pointer;transition:.2s}.toggle:hover{border-color:var(--line2)}
+.toggle input{margin-top:3px;accent-color:#fff;width:16px;height:16px}
+.toggle b{font-size:13px;display:block}.toggle span{font-size:12px;color:var(--dim);line-height:1.5}
+kbd{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:#ffffff1a;border:1px solid var(--line2);border-bottom-width:2px;border-radius:6px;padding:1px 7px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:22px;flex-wrap:wrap}
+.primary{background:#fff;color:#000;border:0;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:700;transition:.2s}.primary:hover{transform:scale(1.05)}
+.secondary{background:transparent;border:1px solid var(--line2);padding:11px 16px;border-radius:10px;font-size:13px;transition:.2s}.secondary:hover{background:#ffffff14}
+.help-link{color:#fff}
+.toast{position:fixed;bottom:28px;left:50%;transform:translate(-50%,16px) scale(.95);background:#fff;color:#000;padding:11px 18px;border-radius:12px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:.3s var(--ease);z-index:60;max-width:90vw}.toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
+.dropmsg{position:fixed;inset:0;z-index:40;background:#000c;display:none;place-items:center;font-family:var(--brand);font-size:30px;pointer-events:none}.dropmsg.show{display:grid}
+
+@media(max-width:860px){.meter{display:none}.mini-meter{display:flex}}
+.mini-meter{display:none;max-width:980px;margin:8px auto 0;justify-content:space-between;font-size:11.5px;color:var(--dim)}
+@media(max-width:760px){.sidebar{position:fixed;z-index:4;inset:0 auto 0 0;transform:translateX(-105%);box-shadow:20px 0 80px #000}.sidebar.open{transform:none}.mobile-menu{display:inline-flex}.topbar{padding:0 14px;height:58px}.chat-scroll{padding:18px 14px}.composer-wrap{padding:8px 12px 14px}.prompt-grid{grid-template-columns:1fr}.conn span.ct{display:none}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas><div class="vignette"></div>
+
+<div id="splash"><div class="splash-in">
+  <div class="splash-word"><span>E</span><span>'</span><span>s</span><span class="sp"></span><span>A</span><span>I</span></div>
+  <div class="splash-bar"><i></i></div>
+  <div class="splash-msg" id="splashMsg">Loading E’s AI interface…</div>
+</div></div>
+
+<div class="dropmsg" id="dropmsg">Drop images to attach</div>
+
+<div class="app" id="app">
+<aside class="sidebar" id="sidebar">
+  <div class="brand">E's AI</div>
+  <button class="new-chat" id="newChat"><span>+</span><span>New chat</span></button>
+  <div class="side-label">Your chats</div>
+  <div class="history" id="history"></div>
+  <div class="side-bottom"><button class="side-btn" id="sideSettings"><span>⚙</span><span>Settings</span></button></div>
+</aside>
+<main class="main">
+  <header class="topbar">
+    <div class="top-left"><button class="icon-btn mobile-menu" id="menuBtn" aria-label="Menu">☰</button></div>
+    <div class="top-actions">
+      <span class="conn"><i class="dot off" id="dot"></i><span class="ct" id="connText">AI not connected</span></span>
+      <button class="settings-btn" id="openSettings">Settings</button>
+    </div>
+  </header>
+  <section class="chat-scroll" id="chatScroll"><div class="chat-inner">
+    <div class="welcome" id="welcome">
+      <h1>E's AI</h1>
+      <p>Your AI workspace.</p>
+      <div class="prompt-grid">
+        <button class="prompt" data-prompt="Explain a difficult topic to me in a simple way."><b>Learn something</b><small>Break down a hard topic simply</small></button>
+        <button class="prompt" data-prompt="Give me 5 creative ideas for a fun project I can build."><b>Get creative</b><small>Brainstorm ideas and new angles</small></button>
+        <button class="prompt" data-prompt="Help me write clean, working HTML, CSS, and JavaScript for a website."><b>Build something</b><small>Write, debug, and ship code</small></button>
+        <button class="prompt" data-prompt="Help me make a plan to reach a goal, with clear steps."><b>Make a plan</b><small>Turn a goal into next steps</small></button>
+      </div>
+    </div>
+    <div class="messages" id="messages"></div>
+  </div></section>
+  <footer class="composer-wrap">
+    <div class="composer-row">
+      <form class="composer" id="chatForm">
+        <div class="chips" id="chips"></div>
+        <div class="composer-main">
+          <button type="button" class="round" id="attachBtn" title="Attach image (or paste / drag one in)" aria-label="Attach image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.4 11.1l-9 9a6 6 0 01-8.5-8.5l9-9a4 4 0 015.7 5.7l-9.1 9a2 2 0 01-2.8-2.8l8.4-8.4"/></svg></button>
+          <textarea id="promptInput" rows="1" placeholder="Message E's AI…" autocomplete="off"></textarea>
+          <button class="round send-btn" id="sendBtn" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" multiple hidden>
+      </form>
+      <aside class="meter" id="meter">
+        <div class="m-title">AI provider</div>
+        <div class="m-prov" id="mProv">Not connected</div>
+        <div class="m-sub" id="mSub"></div>
+      </aside>
+    </div>
+    <div class="mini-meter" id="miniMeter"></div>
+    <div class="composer-note">E's AI can make mistakes. Check important info.</div>
+  </footer>
+</main>
+</div>
+
+<div class="overlay" id="settingsOverlay">
+  <section class="modal" role="dialog" aria-label="Settings">
+    <div class="modal-head"><h2>Settings</h2><button class="icon-btn" id="closeSettings" aria-label="Close">✕</button></div>
+
+    <h3>AI provider</h3>
+    <p>Powered by Groq. Your API key is stored encrypted and unlocked with your passphrase. Leave the model fields empty for defaults.</p>
+    <div class="krow"><label>Chat model <small>text</small></label><input class="field" id="mText" autocomplete="off" spellcheck="false"></div>
+    <div class="krow"><label>Vision model <small>used when you attach images (max 3)</small></label><input class="field" id="mVision" autocomplete="off" spellcheck="false"></div>
+    <div class="krow"><label>Replace API key <small>optional</small></label><div class="two"><input class="field" id="newKey" type="password" autocomplete="off" placeholder="gsk_…"><input class="field" id="newPass" type="password" autocomplete="new-password" placeholder="New passphrase"></div></div>
+    <button class="secondary" id="lockNow" type="button">Lock now</button>
+
+    <h3>Security</h3>
+    <label class="toggle"><input type="checkbox" id="panicToggle"><div><b>Panic key: <kbd>Ctrl</kbd> + <kbd>0</kbd></b><span>Instantly closes and blanks this tab (<kbd>Cmd</kbd> + <kbd>0</kbd> on Mac). Browsers only let a script close tabs it opened, so if closing is blocked the tab turns into a blank page instead. Your saved chats are not deleted.</span></div></label>
+
+    
+
+    <div class="modal-actions">
+      <button class="secondary" id="clearChats">Delete all chats</button>
+      
+      <button class="primary" id="saveSettings">Save</button>
+    </div>
+  </section>
+</div>
+<div class="overlay" id="unlockOverlay">
+  <form class="modal" id="unlockForm" style="width:min(420px,100%)">
+    <div class="modal-head"><h2>Unlock E's AI</h2></div>
+    <p>Enter your passphrase to decrypt your Groq API key.</p>
+    <input class="field" id="unlockPass" type="password" autocomplete="current-password" placeholder="Passphrase">
+    <label style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--dim);margin-top:10px"><input type="checkbox" id="showPass" style="accent-color:#fff"> Show passphrase</label>
+    <div id="rawWrap" style="display:none;margin-top:10px"><input class="field" id="rawKey" type="password" placeholder="gsk_… (this session only)" autocomplete="off"><button class="secondary" type="button" id="useRaw" style="margin-top:8px">Use key</button></div>
+    <div id="unlockErr" style="color:#fff;font-size:12px;margin-top:8px;min-height:16px"></div>
+    <label class="toggle"><input type="checkbox" id="unlockRemember"><div><b>Stay unlocked on this device</b><span>Saves the passphrase in this browser so you aren't asked again.</span></div></label>
+    <div class="modal-actions"><button class="secondary" type="button" id="unlockSkip">Not now</button><button class="primary" type="submit">Unlock</button></div>
+  </form>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}},del(k){try{localStorage.removeItem(k)}catch{}}};
+
+/* ---------- AI: Groq ---------- */
+// The API key is NOT stored in plain text. EMBEDDED_KEY is AES-GCM encrypted (PBKDF2-SHA256, 200k iterations);
+// you unlock it with your passphrase. Note: once unlocked, the key lives in browser memory and requests go
+// straight to Groq, so keep this file private (personal use only; don't host it publicly).
+const EMBEDDED_KEY='MVDB/OKBKrZYWMFsc/RkMaOJUFBR5hFULnKo5KC1xB8Rd7Ixh5xnfaWM+qleDUFxj+RRwgKSJhCdlo8XaQLeSNPXJlIUQ8WZu7E1CXKb/dGEkB14VuSWqOqfDSOO9AQUC2ohxQ==';
+const GROQ_URL='https://api.groq.com/openai/v1/chat/completions';
+const DEFAULT_MODELS={text:'openai/gpt-oss-120b',vision:'qwen/qwen3.8-27b'};
+const SYSTEM_PROMPT="You are E's AI, a helpful, concise assistant. Use Markdown when it helps (lists, code blocks).";
+const b64={enc:u=>btoa(String.fromCharCode(...u)),dec:s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0))};
+async function deriveKey(pass,salt,usage){const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,[usage])}
+async function decryptKey(blob,pass){const a=b64.dec(blob);const k=await deriveKey(pass,a.slice(0,16),'decrypt');return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:a.slice(16,28)},k,a.slice(28)))}
+async function encryptKey(key,pass){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));const k=await deriveKey(pass,salt,'encrypt');const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(key)));const all=new Uint8Array(28+ct.length);all.set(salt,0);all.set(iv,16);all.set(ct,28);return b64.enc(all)}
+
+let apiKey=null,unlockWaiters=[];
+const keyBlob=()=>LS.get('esai_keyenc',null)||EMBEDDED_KEY;
+async function tryUnlock(pass,remember){
+ pass=(pass||'').trim();
+ if(!window.crypto||!crypto.subtle){const e=new Error('NOSUBTLE');throw e}
+ const k=await decryptKey(keyBlob(),pass);
+ apiKey=k;try{sessionStorage.setItem('esai_pass',pass)}catch{}
+ if(remember)LS.set('esai_pass',pass);
+ setConn('on','Groq connected');updateMeter();
+ unlockWaiters.splice(0).forEach(r=>r(k));return k;
+}
+async function autoUnlock(){
+ for(const p of [sessionStorage.getItem('esai_pass'),LS.get('esai_pass',null)]){if(p){try{return await tryUnlock(p,false)}catch{}}}
+ return null;
+}
+function askUnlock(){
+ $('#unlockErr').textContent='';$('#unlockPass').value='';$('#unlockOverlay').classList.add('open');setTimeout(()=>$('#unlockPass').focus(),50);
+ return new Promise((res,rej)=>{unlockWaiters.push(res);askUnlock.rej=rej});
+}
+async function getKey(){return apiKey||await autoUnlock()||await askUnlock()}
+function lockNow(){apiKey=null;try{sessionStorage.removeItem('esai_pass')}catch{}LS.del('esai_pass');setConn('off','Locked');updateMeter()}
+
+const models=()=>({text:(cfg.mText||DEFAULT_MODELS.text),vision:(cfg.mVision||DEFAULT_MODELS.vision)});
+function toApiMessages(messages,images){
+ const out=[{role:'system',content:SYSTEM_PROMPT}];
+ messages.forEach((m,i)=>{
+  const last=i===messages.length-1;
+  if(last&&m.role==='user'&&images&&images.length){
+   out.push({role:'user',content:[{type:'text',text:m.content||'Describe this image.'},...images.slice(0,3).map(u=>({type:'image_url',image_url:{url:u}}))]});
+  }else out.push({role:m.role,content:m.content||(m.img?'[image]':'')});
+ });
+ return out;
+}
+const stripThink=t=>t.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/^\s+/,'');
+async function requestAI(messages,images,onChunk){
+ const key=await getKey();
+ const useVision=images&&images.length;
+ const res=await fetch(GROQ_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+  body:JSON.stringify({model:useVision?models().vision:models().text,messages:toApiMessages(messages,images),stream:true,temperature:.7,max_completion_tokens:4096})});
+ if(!res.ok){
+  let d='';try{const j=await res.json();d=j.error?.message||''}catch{}
+  if(res.status===401)throw new Error('Groq rejected the API key (401). Check it in Settings.');
+  if(res.status===429)throw new Error('Groq rate limit reached (429). Wait a moment and try again.');
+  throw new Error('Groq error '+res.status+(d?': '+d:'')+(res.status===404||res.status===400?'\n\nThe model may have been retired. Change model IDs in Settings.':''));
+ }
+ const rd=res.body.getReader(),dec=new TextDecoder();let buf='',full='';
+ for(;;){
+  const {done,value}=await rd.read();if(done)break;
+  buf+=dec.decode(value,{stream:true});
+  let i;while((i=buf.indexOf('\n'))>=0){
+   const line=buf.slice(0,i).trim();buf=buf.slice(i+1);
+   if(!line.startsWith('data:'))continue;const p=line.slice(5).trim();if(p==='[DONE]')continue;
+   try{const t=JSON.parse(p).choices?.[0]?.delta?.content;if(t){full+=t;onChunk&&onChunk(stripThink(full))}}catch{}
+  }
+ }
+ full=stripThink(full);
+ if(!full)throw new Error('The model returned an empty reply.');
+ return full;
+}
+
+/* ---------- state ---------- */
+const STORE='esai_conversations_v1';
+let conversations=LS.get(STORE,[]);
+let currentId=null,busy=false,pending=[];
+const active=()=>conversations.find(c=>c.id===currentId);
+const save=()=>LS.set(STORE,conversations);
+const cfg=Object.assign({panic:true},LS.get('esai_cfg',{}));
+const saveCfg=()=>LS.set('esai_cfg',{panic:cfg.panic,mText:cfg.mText||'',mVision:cfg.mVision||''});
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2800)}
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- markdown ---------- */
+function md(src){
+ const blocks=[];
+ src=src.replace(/```(\w*)[ \t]*\n?([\s\S]*?)(```|$)/g,(m,l,c)=>{blocks.push({l,c:c.replace(/\n$/,'')});return '\n\u0000'+(blocks.length-1)+'\u0000\n'});
+ let h=esc(src);
+ h=h.replace(/^#{3,4} (.*)$/gm,'<h4>$1</h4>').replace(/^#{1,2} (.*)$/gm,'<h3>$1</h3>');
+ h=h.replace(/(?:^|\n)((?:[-*] .+(?:\n|$))+)/g,(m,l)=>'\n<ul>'+l.trim().split('\n').map(x=>'<li>'+x.replace(/^[-*] /,'')+'</li>').join('')+'</ul>\n');
+ h=h.replace(/(?:^|\n)((?:\d+[.)] .+(?:\n|$))+)/g,(m,l)=>'\n<ol>'+l.trim().split('\n').map(x=>'<li>'+x.replace(/^\d+[.)] /,'')+'</li>').join('')+'</ol>\n');
+ h=h.replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>').replace(/(^|[^*\w])\*([^*\n]+)\*/g,'$1<em>$2</em>').replace(/`([^`\n]+)`/g,'<code>$1</code>');
+ h=h.replace(/\n*(<\/?(?:ul|ol|h3|h4)>)\n*/g,'$1').replace(/\n*\u0000(\d+)\u0000\n*/g,'\u0000$1\u0000').replace(/^\n+|\n+$/g,'').replace(/\n/g,'<br>');
+ return h.replace(/\u0000(\d+)\u0000/g,(m,i)=>{const b=blocks[i];return '<div class="code"><div class="code-head"><span>'+(esc(b.l)||'code')+'</span><button type="button" class="copy">Copy</button></div><pre><code>'+esc(b.c)+'</code></pre></div>'});
+}
+
+/* ---------- ui ---------- */
+function setConn(state,text){$('#dot').className='dot '+state;$('#connText').textContent=text}
+function renderHistory(){
+ const el=$('#history');el.innerHTML='';
+ if(!conversations.length){el.innerHTML='<div class="empty-hist">No chats yet.</div>';return}
+ [...conversations].reverse().forEach(c=>{
+  const row=document.createElement('div');row.className='hi'+(c.id===currentId?' active':'');
+  const b=document.createElement('button');b.className='t';b.textContent=c.title||'New chat';b.onclick=()=>openChat(c.id);
+  const x=document.createElement('button');x.className='x';x.textContent='✕';x.title='Delete chat';x.onclick=e=>{e.stopPropagation();conversations=conversations.filter(k=>k.id!==c.id);save();if(currentId===c.id)newChat();else renderHistory()};
+  row.append(b,x);el.appendChild(row);
+ });
+}
+function newChat(){currentId=null;$('#messages').innerHTML='';const w=$('#welcome');w.style.display='block';w.style.animation='none';void w.offsetWidth;w.style.animation='';renderHistory();$('#promptInput').focus();$('#sidebar').classList.remove('open');updateMeter()}
+function openChat(id){currentId=id;const c=active();$('#welcome').style.display='none';$('#messages').innerHTML='';c.messages.forEach(m=>addMessage(m.role,m.content,{img:m.img}));renderHistory();scrollBottom();$('#sidebar').classList.remove('open')}
+function addMessage(role,content,o={}){
+ const row=document.createElement('div');row.className='message '+role;
+ const name=document.createElement('div');name.className='msg-name';
+ name.innerHTML=role==='user'?'<span>You</span>':"<b>E's AI</b>";
+ const bubble=document.createElement('div');bubble.className='bubble';
+ if(role==='assistant'){
+  const cp=document.createElement('button');cp.type='button';cp.className='msg-copy';cp.textContent='Copy';name.appendChild(cp);
+  bubble.dataset.raw=content;if(content)bubble.innerHTML=md(content);
+ }else{
+  if(o.thumbs&&o.thumbs.length){const t=document.createElement('div');t.className='thumbs';o.thumbs.forEach(u=>{const im=new Image();im.src=u;t.appendChild(im)});row.append(name,t,bubble)}
+  else if(o.img){const t=document.createElement('div');t.className='img-tag';t.textContent='['+o.img+' image'+(o.img>1?'s':'')+' attached]';row.append(name,t,bubble)}
+  bubble.textContent=content;
+ }
+ if(!row.children.length)row.append(name,bubble);
+ $('#messages').appendChild(row);if(o.scroll!==false)scrollBottom();return bubble;
+}
+const scrollBottom=()=>{const s=$('#chatScroll');s.scrollTop=s.scrollHeight};
+function setBusy(v){busy=v;$('#sendBtn').disabled=v}
+document.addEventListener('click',e=>{
+ const c=e.target.closest('.copy');if(c){const t=c.closest('.code').querySelector('code').textContent;navigator.clipboard.writeText(t).then(()=>{c.textContent='Copied';setTimeout(()=>c.textContent='Copy',1400)});return}
+ const m=e.target.closest('.msg-copy');if(m){const raw=m.closest('.message').querySelector('.bubble').dataset.raw||'';navigator.clipboard.writeText(raw).then(()=>{m.textContent='Copied';setTimeout(()=>m.textContent='Copy',1400)})}
+});
+
+/* ---------- provider status ---------- */
+function updateMeter(){
+ const m=models();
+ $('#mProv').textContent=apiKey?'Groq':'Groq (locked)';
+ $('#mSub').textContent=apiKey?m.text:'Enter your passphrase to unlock.';
+ $('#miniMeter').textContent='Groq: '+(apiKey?m.text:'locked');
+}
+updateMeter();
+
+/* ---------- images ---------- */
+function fileToDataURL(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onerror=rej;fr.onload=()=>{const img=new Image();img.onerror=rej;img.onload=()=>{const M=1280,s=Math.min(1,M/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.82))};img.src=fr.result};fr.readAsDataURL(file)})}
+async function addFiles(files){
+ const imgs=[...files].filter(f=>f.type.startsWith('image/'));if(!imgs.length)return;
+ for(const f of imgs){if(pending.length>=4){toast('Up to 4 images per message');break}try{pending.push(await fileToDataURL(f))}catch{toast('Could not read that image')}}
+ renderChips();
+}
+function renderChips(){
+ const el=$('#chips');el.innerHTML='';
+ pending.forEach((u,i)=>{const d=document.createElement('div');d.className='chip';const im=new Image();im.src=u;const b=document.createElement('button');b.type='button';b.textContent='✕';b.onclick=()=>{pending.splice(i,1);renderChips()};d.append(im,b);el.appendChild(d)});
+ updateMeter();
+}
+$('#attachBtn').onclick=()=>$('#fileInput').click();
+$('#fileInput').onchange=e=>{addFiles(e.target.files);e.target.value=''};
+addEventListener('paste',e=>{const fs=[...(e.clipboardData?.items||[])].filter(i=>i.kind==='file'&&i.type.startsWith('image/')).map(i=>i.getAsFile());if(fs.length){e.preventDefault();addFiles(fs);toast('Image pasted')}});
+let dragN=0;
+addEventListener('dragenter',e=>{if([...(e.dataTransfer?.types||[])].includes('Files')){dragN++;$('#dropmsg').classList.add('show');$('.composer').classList.add('drag')}});
+addEventListener('dragleave',()=>{dragN=Math.max(0,dragN-1);if(!dragN){$('#dropmsg').classList.remove('show');$('.composer').classList.remove('drag')}});
+addEventListener('dragover',e=>e.preventDefault());
+addEventListener('drop',e=>{e.preventDefault();dragN=0;$('#dropmsg').classList.remove('show');$('.composer').classList.remove('drag');addFiles(e.dataTransfer.files)});
+
+/* ---------- AI adapter ---------- */
+// Replace requestAI() near the top of this script when you choose a new AI provider.
+
+/* ---------- send ---------- */
+async function send(text){
+ text=(text||'').trim();const imgs=pending.slice();
+ if((!text&&!imgs.length)||busy)return;
+ if(!currentId){currentId=crypto.randomUUID();conversations.push({id:currentId,title:(text||'Image').slice(0,38)+(text.length>38?'…':''),messages:[]})}
+ const c=active();c.messages.push({role:'user',content:text,img:imgs.length||undefined});
+ $('#welcome').style.display='none';addMessage('user',text,{thumbs:imgs});renderHistory();save();
+ $('#promptInput').value='';$('#promptInput').style.height='auto';pending=[];renderChips();setBusy(true);
+ const bubble=addMessage('assistant','');
+ try{
+  const answer=await requestAI(c.messages.slice(-20),imgs,t=>{bubble.dataset.raw=t;bubble.innerHTML=md(t);scrollBottom()});
+  bubble.dataset.raw=answer;bubble.innerHTML=md(answer);
+  c.messages.push({role:'assistant',content:answer});save();
+ }catch(e){
+  const msg=e?.message||'AI provider is not connected.';
+  bubble.dataset.raw=msg;bubble.innerHTML=md('**Something went wrong**\n\n'+msg);
+  c.messages.pop();save();
+ }
+ setBusy(false);updateMeter();$('#promptInput').focus();scrollBottom();
+}
+
+/* ---------- events ---------- */
+$('#chatForm').addEventListener('submit',e=>{e.preventDefault();send($('#promptInput').value)});
+$('#promptInput').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,170)+'px'});
+$('#promptInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('#chatForm').requestSubmit()}});
+document.querySelectorAll('.prompt').forEach(b=>b.addEventListener('click',()=>send(b.dataset.prompt)));
+$('#newChat').onclick=newChat;$('#menuBtn').onclick=()=>$('#sidebar').classList.toggle('open');
+
+/* ---------- panic key ---------- */
+function panic(){
+ try{document.documentElement.innerHTML='<body style="background:#fff"></body>'}catch{}
+ try{window.open('','_self');window.close()}catch{}
+ location.replace('about:blank');
+}
+addEventListener('keydown',e=>{
+ if(cfg.panic&&(e.ctrlKey||e.metaKey)&&(e.key==='0'||e.code==='Digit0'||e.code==='Numpad0')){e.preventDefault();e.stopImmediatePropagation();panic()}
+ if(e.key==='Escape'){closeSettings()}
+},true);
+
+/* ---------- settings ---------- */
+function buildSettings(){ $('#panicToggle').checked=!!cfg.panic;$('#mText').value=cfg.mText||'';$('#mText').placeholder=DEFAULT_MODELS.text;$('#mVision').value=cfg.mVision||'';$('#mVision').placeholder=DEFAULT_MODELS.vision;$('#newKey').value='';$('#newPass').value='' }
+function openSettings(){buildSettings();$('#settingsOverlay').classList.add('open')}
+function closeSettings(){$('#settingsOverlay').classList.remove('open')}
+$('#openSettings').onclick=openSettings;$('#sideSettings').onclick=()=>{openSettings();$('#sidebar').classList.remove('open')};$('#closeSettings').onclick=closeSettings;
+$('#settingsOverlay').addEventListener('click',e=>{if(e.target.id==='settingsOverlay')closeSettings()});
+$('#saveSettings').onclick=async()=>{
+ cfg.panic=$('#panicToggle').checked;cfg.mText=$('#mText').value.trim();cfg.mVision=$('#mVision').value.trim();saveCfg();
+ const nk=$('#newKey').value.trim(),np=$('#newPass').value;
+ if(nk||np){
+  if(!nk||!np){toast('To change the key, fill in both the key and a passphrase');return}
+  try{LS.set('esai_keyenc',await encryptKey(nk,np));apiKey=nk;try{sessionStorage.setItem('esai_pass',np)}catch{}LS.del('esai_pass');setConn('on','Groq connected')}catch{toast('Could not encrypt the key');return}
+ }
+ updateMeter();closeSettings();toast('Settings saved');
+};
+$('#lockNow').onclick=()=>{lockNow();closeSettings();toast('Locked')};
+$('#unlockForm').addEventListener('submit',async e=>{e.preventDefault();
+ try{await tryUnlock($('#unlockPass').value,$('#unlockRemember').checked);$('#unlockOverlay').classList.remove('open')}
+ catch(err){$('#unlockErr').textContent=err.message==='NOSUBTLE'?'This browser blocks encryption on this page (it needs https or a local file). Use the box below to paste your Groq key for this session instead.':'Wrong passphrase. Try again.';if(err.message==='NOSUBTLE')$('#rawWrap').style.display='block'}});
+$('#showPass').onchange=e=>{$('#unlockPass').type=e.target.checked?'text':'password'};
+$('#useRaw').onclick=()=>{const k=$('#rawKey').value.trim();if(!k.startsWith('gsk_')){$('#unlockErr').textContent='That does not look like a Groq key (starts with gsk_).';return}apiKey=k;setConn('on','Groq connected');updateMeter();$('#unlockOverlay').classList.remove('open');unlockWaiters.splice(0).forEach(r=>r(k))};
+$('#unlockSkip').onclick=()=>{$('#unlockOverlay').classList.remove('open');unlockWaiters.splice(0);if(askUnlock.rej)askUnlock.rej(new Error('Locked. Enter your passphrase to chat.'))};
+$('#clearChats').onclick=()=>{if(confirm('Delete all chats on this device?')){conversations=[];save();newChat();toast('Chats deleted')}};
+
+/* ---------- starfield with warp zoom ---------- */
+const warp={speed:.05,target:.0016};
+(()=>{
+ const cv=$('#stars'),x=cv.getContext('2d');let W,H,D=devicePixelRatio||1,S=[],mx=0,my=0;
+ const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+ const mk=()=>({x:Math.random()*2-1,y:Math.random()*2-1,z:Math.random()*.98+.02});
+ function resize(){W=cv.width=innerWidth*D;H=cv.height=innerHeight*D;S=Array.from({length:Math.min(260,Math.floor(innerWidth/5))},mk)}
+ addEventListener('resize',resize);resize();
+ addEventListener('pointermove',e=>{mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5},{passive:true});
+ let px=0,py=0;
+ function draw(){
+  x.fillStyle='rgba(0,0,0,.35)';x.fillRect(0,0,W,H);
+  if(reduce)warp.speed=0;else warp.speed+=(warp.target-warp.speed)*.035;
+  px+=(mx-px)*.05;py+=(my-py)*.05;
+  const cx=W/2,cy=H/2,k=Math.max(W,H)*.32;
+  for(const s of S){
+   const pz=s.z;s.z-=warp.speed;
+   const sx=cx+(s.x/s.z)*k+px*60*D*(1-s.z),sy=cy+(s.y/s.z)*k+py*60*D*(1-s.z);
+   if(s.z<=.02||sx<0||sx>W||sy<0||sy>H){Object.assign(s,mk(),{z:1});continue}
+   const ox=cx+(s.x/pz)*k+px*60*D*(1-pz),oy=cy+(s.y/pz)*k+py*60*D*(1-pz);
+   const a=Math.min(1,(1-s.z)*1.25);
+   x.strokeStyle='rgba(255,255,255,'+a+')';x.lineWidth=Math.max(.5,(1-s.z)*1.8)*D;
+   x.beginPath();x.moveTo(ox,oy);x.lineTo(sx+.01,sy);x.stroke();
+  }
+  requestAnimationFrame(draw);
+ }
+ draw();
+})();
+
+/* ---------- boot ---------- */
+renderHistory();updateMeter();
+setConn('off','Locked');
+$('#splashMsg').textContent='Interface ready';
+autoUnlock().then(k=>{if(!k)setTimeout(()=>askUnlock().catch(()=>{}),1900)});
+setTimeout(()=>{
+ $('#splash').classList.add('done');warp.speed=.07;
+ $('#app').classList.add('in');
+ setTimeout(()=>{$('#splash').remove();$('#promptInput').focus()},1000);
+},1200);
+</script>
+</body>
+</html>
